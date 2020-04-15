@@ -49,9 +49,9 @@ var properties = [
 var isBrowser = typeof window !== "undefined";
 var isFirefox = isBrowser && window["mozInnerScreenX"] != null;
 export function getCaretCoordinates(
-  element: HTMLInputElement | TextArea,
+  element: HTMLTextAreaElement,
   position: number,
-  root: Element,
+  root: Element | DocumentFragment,
   options?: { debug: boolean }
 ) {
   if (!isBrowser) {

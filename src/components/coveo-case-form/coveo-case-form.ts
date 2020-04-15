@@ -6,8 +6,12 @@ import { LitElement, html, customElement, property, css } from "lit-element";
 import "@material/mwc-textarea";
 import "@material/mwc-textfield";
 import "@material/mwc-list";
+
 import { TextArea } from "@material/mwc-textarea";
 import { getCaretCoordinates } from "../../utils/caretPosition";
+import "../coveo-carret-position/coveo-carret-position";
+import { CoveoCarretPosition } from "../coveo-carret-position/coveo-carret-position";
+
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
@@ -16,7 +20,13 @@ import { getCaretCoordinates } from "../../utils/caretPosition";
 export class CoveoCaseForm extends LitElement {
   static canvas: HTMLCanvasElement;
   static CSSOffset: { x: number; y: number } = { x: 16, y: 8 };
-  popup: HTMLElement;
+
+  private get popup(): CoveoCarretPosition {
+    return this.renderRoot.querySelector<CoveoCarretPosition>(
+      "coveo-carret-position"
+    );
+  }
+
   observer: MutationObserver;
   static get styles() {
     return css`
@@ -51,11 +61,14 @@ export class CoveoCaseForm extends LitElement {
         outlined
         label="Description"
       ></mwc-textarea>
+      <coveo-carret-position></coveo-carret-position>
     </div>`;
   }
 
   firstUpdated() {
-    const foo: TextArea = this.shadowRoot.getElementById("foo") as TextArea;
+    var baz: Element;
+
+    const foo: TextArea = this.renderRoot.querySelector("#foo") as TextArea;
     const evtListener = (e: Event) => {
       const target = e.target;
       this.positionPopup(target);
@@ -80,29 +93,23 @@ export class CoveoCaseForm extends LitElement {
               }
             }) as Element
           );
-
+          requestAnimationFrame;
           if (textarea) {
-            function debounce(func, wait, immediate?) {
-              var timeout;
-              return function () {
-                var context = this,
-                  args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(function () {
-                  timeout = null;
-                  if (!immediate) func.apply(context, args);
-                }, wait);
-                if (immediate && !timeout) func.apply(context, args);
-              };
-            }
+            let scrollTimeout: number;
             textarea.addEventListener("scroll", (event) => {
-              debounce(this.positionPopup(foo), 10);
+              if (scrollTimeout) {
+                window.cancelAnimationFrame(scrollTimeout);
+              }
+              scrollTimeout = window.requestAnimationFrame(
+                this.positionPopup.bind(this, foo)
+              );
             });
+            observer.disconnect();
           }
         }
       }
     });
-    domLoadObserve.observe(foo.shadowRoot, { childList: true, subtree: true });
+    domLoadObserve.observe(foo.renderRoot, { childList: true, subtree: true });
   }
 
   getNodeContainingArea(node: Element): Element {
@@ -115,27 +122,23 @@ export class CoveoCaseForm extends LitElement {
   private positionPopup(target: EventTarget) {
     if (target instanceof TextArea) {
       const positions = getCaretCoordinates(
-        target.shadowRoot.activeElement as TextArea,
+        target.renderRoot.querySelector("textarea"),
         target.selectionEnd,
-        this.shadowRoot.firstElementChild,
+        this.renderRoot,
         { debug: false }
       );
-      if (!this.popup) {
-        this.popup = document.createElement("div");
-        this.popup.style.backgroundColor = "red";
-        this.popup.style.position = "absolute";
-        this.popup.style.zIndex = "2";
-        this.shadowRoot.firstElementChild.append(this.popup);
-        this.popup.style.marginRight = "0";
-        this.popup.style.marginTop = "0";
-        this.popup.style.marginBottom = "0";
-        this.popup.style.marginLeft = "0";
-        this.popup.style.width = "0";
-        this.popup.style.height = "0";
+
+      const targetRects = target.getBoundingClientRect();
+      if (
+        positions.top > targetRects.bottom ||
+        positions.top < targetRects.top ||
+        positions.left < targetRects.left ||
+        positions.left > targetRects.right
+      ) {
+        this.popup.hidden = true;
+        return;
       }
-      this.popup.style.width = positions.fontSize + "px";
-      this.popup.style.height = this.popup.style.width;
-      this.popup.style.marginLeft = positions.fontSize * 0.2 + "px";
+      this.popup.hidden = false;
       this.popup.style.top = positions.top + "px";
       this.popup.style.left = positions.left + "px";
     }
