@@ -2,9 +2,13 @@
  * Import LitElement base class, html helper function,
  * and TypeScript decorators
  **/
-import { LitElement, html, customElement, css } from "lit-element";
+import { LitElement, html, customElement, css, property } from "lit-element";
 import { TextArea } from "@material/mwc-textarea";
 import { getCaretCoordinates } from "../../utils/caretPosition";
+
+export interface ICaretSlottable extends LitElement {
+  isOpened: boolean;
+}
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
@@ -144,7 +148,9 @@ export class CoveoCarretPosition extends LitElement {
         return;
       }
       this.carret.hidden = false;
-      this.carret.style.top = positions.top + "px";
+      //TODO: Remove and add as option.
+      this.carret.style.top =
+        positions.top + positions.lineHeight * 0.85 + "px";
       this.carret.style.left = positions.left + "px";
     }
   }

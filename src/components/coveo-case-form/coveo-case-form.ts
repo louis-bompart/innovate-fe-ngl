@@ -9,6 +9,7 @@ import "@material/mwc-list";
 
 import "../coveo-carret-position/coveo-carret-position";
 import "../coveo-text-completion/coveo-text-completion";
+import { TextArea } from "@material/mwc-textarea";
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
@@ -54,5 +55,19 @@ export class CoveoCaseForm extends LitElement {
         <coveo-text-completion slot="carret"></coveo-text-completion>
       </coveo-carret-position>
     </div>`;
+  }
+
+  firstUpdated() {
+    const description = this.renderRoot.querySelector(
+      "coveo-carret-position mwc-textarea"
+    );
+    this.renderRoot
+      .querySelector("coveo-text-completion")
+      .addEventListener("text-selected", (event: CustomEvent) => {
+        const textArea = this.renderRoot.querySelector<TextArea>(
+          "coveo-carret-position mwc-textarea"
+        );
+        textArea.value = textArea.value + event.detail.text;
+      });
   }
 }
