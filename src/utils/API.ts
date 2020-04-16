@@ -14,8 +14,14 @@ export async function getCompletionSuggestions(
   data: string
 ): Promise<Array<string>> {
   const response = DEMO
-    ? JSON.parse(
-        '[{"completion":"I am very glad that I did"},{"completion":"I am not an economist and I"},{"completion":"I am not sure how many I"}]'
+    ? await new Promise<ICompletionResponse>((resolve) =>
+        setTimeout(() => {
+          resolve(
+            JSON.parse(
+              '[{"completion":"I am very glad that I did"},{"completion":"I am not an economist and I"},{"completion":"I am not sure how many I"}]'
+            )
+          );
+        }, 200)
       )
     : await xhrWrapper({ TEXT: data, LENGTH: LENGTH_NB });
 
