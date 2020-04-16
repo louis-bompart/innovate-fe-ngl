@@ -5,11 +5,6 @@
 import { LitElement, html, customElement, css, property } from "lit-element";
 import "@material/mwc-list/mwc-list-item";
 import "@material/mwc-list/mwc-list";
-import {
-  SelectedDetail,
-  SelectedEvent,
-  SingleSelectedEvent,
-} from "@material/mwc-list/mwc-list-foundation";
 import { List } from "@material/mwc-list/mwc-list";
 import { ListItemBase } from "@material/mwc-list/mwc-list-item-base";
 
@@ -74,10 +69,10 @@ export class CoveoTextCompletion extends LitElement {
 
   private mwcList: List;
 
-  onSelected = (event: SingleSelectedEvent) => {
+  onAction = () => {
     if (this.mwcList.selected instanceof ListItemBase) {
       const value = this.mwcList.selected.value;
-      this.mwcList.toggle(event.detail.index);
+      this.mwcList.select(null);
       let bubbleUpEvent = new CustomEvent("text-selected", {
         detail: {
           text: value,
@@ -89,6 +84,6 @@ export class CoveoTextCompletion extends LitElement {
 
   firstUpdated() {
     this.mwcList = this.renderRoot.querySelector<List>("#styled");
-    this.mwcList.addEventListener("selected", this.onSelected);
+    this.mwcList.addEventListener("action", this.onAction);
   }
 }
