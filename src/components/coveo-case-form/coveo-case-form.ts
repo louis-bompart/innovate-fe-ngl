@@ -12,6 +12,7 @@ import "../coveo-text-completion/coveo-text-completion";
 import { TextArea } from "@material/mwc-textarea";
 import { getCompletionSuggestions } from "../../utils/API";
 import { CoveoTextCompletion } from "../coveo-text-completion/coveo-text-completion";
+import { CoveoCarretPosition } from "../coveo-carret-position/coveo-carret-position";
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
@@ -24,6 +25,12 @@ export class CoveoCaseForm extends LitElement {
   observer: MutationObserver;
   description: TextArea;
   completion: CoveoTextCompletion;
+  private get carretPosition(): CoveoCarretPosition {
+    return this.renderRoot.querySelector(
+      "coveo-carret-position"
+    ) as CoveoCarretPosition;
+  }
+
   static get styles() {
     return css`
       div {
@@ -70,14 +77,42 @@ export class CoveoCaseForm extends LitElement {
       "coveo-carret-position coveo-text-completion"
     );
     this.completion.addEventListener("text-selected", (event: CustomEvent) => {
-      this.description.value = this.description.value + event.detail.text;
+      const valueBeforeCaret =
+        this.description.value.substring(0, this.description.selectionEnd) +
+        event.detail.text;
+      this.description.value =
+        valueBeforeCaret +
+        this.description.value.substring(this.description.selectionEnd);
       this.completion.hidden = true;
       this.description.focus();
+
+      this.description.updateComplete.then(() => {
+        this.description.setSelectionRange(
+          valueBeforeCaret.length,
+          valueBeforeCaret.length,
+          "forward"
+        );
+      });
     });
     this.description.addEventListener(
       "input",
       this.onDescriptionInput.bind(this)
     );
+    this.description.addEventListener("keyup", (event: KeyboardEvent) => {
+      switch (event.key) {
+        case "Up":
+        case "Down":
+        case "Left":
+        case "Right":
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight":
+          this.carretPosition.updateCarretPosition();
+          this.onDescriptionInput(event);
+          break;
+      }
+    });
   }
 
   descriptionCondition: (input: string, fieldValue: string) => boolean = (
@@ -91,16 +126,16 @@ export class CoveoCaseForm extends LitElement {
     );
   };
 
-  async onDescriptionInput(event: InputEvent) {
+  async onDescriptionInput(event: InputEvent | KeyboardEvent) {
     const description = event.target as TextArea;
     const inputBeforeCaret = description.value.substr(
       0,
       description.selectionEnd
     );
-    if (this.descriptionCondition(event.data, inputBeforeCaret)) {
-      this.completion.suggestions = await getCompletionSuggestions(
-        inputBeforeCaret
-      );
-    }
+    
+    //TODO: Debounce to avoid spamming the API if people fall asleep on their keyboards.
+    this.completion.suggestions = await getCompletionSuggestions(
+      inputBeforeCaret
+    );
   }
 }
