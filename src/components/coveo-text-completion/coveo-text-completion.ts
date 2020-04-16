@@ -42,9 +42,16 @@ export class CoveoTextCompletion extends LitElement {
   }
   constructor() {
     super();
+    this.isOpened = false;
     this.hidden = true;
     this.suggestions = [];
   }
+
+  @property({ type: Boolean, reflect: true })
+  isOpened: boolean;
+
+  @property({ type: Boolean, reflect: true })
+  isInScrolledSection: boolean;
 
   @property({ type: Array })
   suggestions: Array<string>;
@@ -67,18 +74,24 @@ export class CoveoTextCompletion extends LitElement {
     </mwc-list>`;
   }
 
+  attributeChangedCallback() {
+    this.hidden = !this.isOpened || !this.isInScrolledSection;
+  }
+
   private mwcList: List;
 
   onAction = () => {
-    if (this.mwcList.selected instanceof ListItemBase) {
-      const value = this.mwcList.selected.value;
-      this.mwcList.select(null);
-      let bubbleUpEvent = new CustomEvent("text-selected", {
-        detail: {
-          text: value,
-        },
-      });
-      this.dispatchEvent(bubbleUpEvent);
+    if (!this.hidden) {
+      if (this.mwcList.selected instanceof ListItemBase) {
+        const value = this.mwcList.selected.value;
+        this.mwcList.select(null);
+        let bubbleUpEvent = new CustomEvent("text-selected", {
+          detail: {
+            text: value,
+          },
+        });
+        this.dispatchEvent(bubbleUpEvent);
+      }
     }
   };
 

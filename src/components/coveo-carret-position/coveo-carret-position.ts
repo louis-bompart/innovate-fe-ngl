@@ -7,7 +7,7 @@ import { TextArea } from "@material/mwc-textarea";
 import { getCaretCoordinates } from "../../utils/caretPosition";
 
 export interface ICaretSlottable extends LitElement {
-  isOpened: boolean;
+  isInScrolledSection: boolean;
 }
 
 // TODO: support native textarea.
@@ -23,10 +23,10 @@ export class CoveoCarretPosition extends LitElement {
       .querySelector<HTMLSlotElement>("#form")
       .assignedElements()[0] as ITextAreaSlottable;
   }
-  private get carret(): HTMLElement {
+  private get carret(): ICaretSlottable {
     return this.renderRoot
       .querySelector<HTMLSlotElement>("#carret")
-      .assignedElements()[0] as HTMLElement;
+      .assignedElements()[0] as ICaretSlottable;
   }
   private textAreaScrollObserver: MutationObserver;
   private textAreaDomLoadObserver: MutationObserver;
@@ -148,10 +148,10 @@ export class CoveoCarretPosition extends LitElement {
       positions.left < targetRects.left ||
       positions.left > targetRects.right
     ) {
-      this.carret.hidden = true;
+      this.carret.isInScrolledSection = false;
       return;
     }
-    this.carret.hidden = false;
+    this.carret.isInScrolledSection = true;
     //TODO: Remove and add as option.
     this.carret.style.top = positions.top + positions.lineHeight * 0.85 + "px";
     this.carret.style.left = positions.left + "px";

@@ -83,7 +83,7 @@ export class CoveoCaseForm extends LitElement {
       this.description.value =
         valueBeforeCaret +
         this.description.value.substring(this.description.selectionEnd);
-      this.completion.hidden = true;
+      this.completion.isOpened = false;
       this.description.focus();
 
       this.description.updateComplete.then(() => {
@@ -96,10 +96,12 @@ export class CoveoCaseForm extends LitElement {
         this.description.focus();
       });
     });
+
     this.description.addEventListener(
       "input",
       this.onDescriptionInput.bind(this)
     );
+
     this.description.addEventListener("keyup", async (event: KeyboardEvent) => {
       switch (event.key) {
         case "Up":
@@ -117,16 +119,17 @@ export class CoveoCaseForm extends LitElement {
           if (event.ctrlKey) {
             this.carretPosition.updateCarretPosition();
             await this.onDescriptionInput(event);
-            this.completion.hidden = false;
+            this.completion.isOpened = true;
           }
           break;
-        case "Esc": // IE/Edge specific value
+        case "Esc":
         case "Escape":
-          this.completion.hidden = true;
+          this.completion.isOpened = false;
+          break;
       }
     });
     this.description.addEventListener("mouseup", (event: MouseEvent) => {
-      this.completion.hidden = true;
+      this.completion.isOpened = false;
     });
   }
 
@@ -141,16 +144,31 @@ export class CoveoCaseForm extends LitElement {
     );
   };
 
-  async onDescriptionInput(event: Event) {
-    const description = event.target as TextArea;
-    const inputBeforeCaret = description.value.substr(
+  async onDescriptionInput(event: Event | InputEvent) {
+    const inputBeforeCaret = this.description.value.substr(
       0,
-      description.selectionEnd
+      this.description.selectionEnd
     );
+    if (
+      !(event instanceof InputEvent) ||
+      this.shouldDisplaySuggestionFromInputEvent(event)
+    ) {
+      this.completion.isOpened = true;
+      //TODO: Debounce to avoid spamming the API if people fall asleep on their keyboards.
+      this.completion.suggestions = await getCompletionSuggestions(
+        inputBeforeCaret
+      );
+    } else {
+      this.completion.isOpened = false;
+    }
+  }
 
-    //TODO: Debounce to avoid spamming the API if people fall asleep on their keyboards.
-    this.completion.suggestions = await getCompletionSuggestions(
-      inputBeforeCaret
-    );
+  shouldDisplaySuggestionFromInputEvent(event: InputEvent) {
+    if (event.data) {
+      return event.data.endsWith(" ");
+    }
+    if (event.inputType.startsWith("delete")) {
+      return (event.target as TextArea).value.endsWith(" ");
+    }
   }
 }
