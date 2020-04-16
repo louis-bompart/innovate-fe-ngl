@@ -111,7 +111,20 @@ export class CoveoCaseForm extends LitElement {
           this.carretPosition.updateCarretPosition();
           this.onDescriptionInput(event);
           break;
+        case " ":
+          if (event.ctrlKey) {
+            this.carretPosition.updateCarretPosition();
+            this.onDescriptionInput(event);
+            this.completion.hidden = false;
+          }
+          break;
+        case "Esc": // IE/Edge specific value
+        case "Escape":
+          this.completion.hidden = true;
       }
+    });
+    this.description.addEventListener("mouseup", (event: MouseEvent) => {
+      this.completion.hidden = true;
     });
   }
 
@@ -126,13 +139,13 @@ export class CoveoCaseForm extends LitElement {
     );
   };
 
-  async onDescriptionInput(event: InputEvent | KeyboardEvent) {
+  async onDescriptionInput(event: Event) {
     const description = event.target as TextArea;
     const inputBeforeCaret = description.value.substr(
       0,
       description.selectionEnd
     );
-    
+
     //TODO: Debounce to avoid spamming the API if people fall asleep on their keyboards.
     this.completion.suggestions = await getCompletionSuggestions(
       inputBeforeCaret
