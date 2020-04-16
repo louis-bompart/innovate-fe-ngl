@@ -2,7 +2,7 @@
  * Import LitElement base class, html helper function,
  * and TypeScript decorators
  **/
-import { LitElement, html, customElement, css } from "lit-element";
+import { LitElement, html, customElement, css, property } from "lit-element";
 import "@material/mwc-list/mwc-list-item";
 import "@material/mwc-list/mwc-list";
 import {
@@ -48,7 +48,12 @@ export class CoveoTextCompletion extends LitElement {
   constructor() {
     super();
     this.hidden = true;
+    this.suggestions = [];
   }
+
+  @property({ type: Array })
+  suggestions: Array<string>;
+
   /**
    * Implement `render` to define a template for your element.
    */
@@ -58,10 +63,12 @@ export class CoveoTextCompletion extends LitElement {
      * the element template.
      */
     return html`<mwc-list id="styled">
-      <mwc-list-item value="quick">Quick</mwc-list-item>
-      <mwc-list-item value="brown">Brown</mwc-list-item>
-      <mwc-list-item value="dog">Dog</mwc-list-item>
-      <mwc-list-item value="fox">Fox</mwc-list-item>
+      ${this.suggestions.map(
+        (suggestion) =>
+          html`<mwc-list-item value=${suggestion.toLowerCase()}
+            >${suggestion}</mwc-list-item
+          >`
+      )}
     </mwc-list>`;
   }
 

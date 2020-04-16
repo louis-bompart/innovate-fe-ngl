@@ -10,6 +10,8 @@ import "@material/mwc-list";
 import "../coveo-carret-position/coveo-carret-position";
 import "../coveo-text-completion/coveo-text-completion";
 import { TextArea } from "@material/mwc-textarea";
+import { getCompletionSuggestions } from "../../utils/API";
+import { CoveoTextCompletion } from "../coveo-text-completion/coveo-text-completion";
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
@@ -20,6 +22,8 @@ export class CoveoCaseForm extends LitElement {
   static CSSOffset: { x: number; y: number } = { x: 16, y: 8 };
 
   observer: MutationObserver;
+  description: TextArea;
+  completion: CoveoTextCompletion;
   static get styles() {
     return css`
       div {
@@ -32,6 +36,7 @@ export class CoveoCaseForm extends LitElement {
       }
     `;
   }
+
   /**
    * Implement `render` to define a template for your element.
    */
@@ -58,16 +63,42 @@ export class CoveoCaseForm extends LitElement {
   }
 
   firstUpdated() {
-    const description = this.renderRoot.querySelector(
+    this.description = this.renderRoot.querySelector<TextArea>(
       "coveo-carret-position mwc-textarea"
     );
-    this.renderRoot
-      .querySelector("coveo-text-completion")
-      .addEventListener("text-selected", (event: CustomEvent) => {
-        const textArea = this.renderRoot.querySelector<TextArea>(
-          "coveo-carret-position mwc-textarea"
-        );
-        textArea.value = textArea.value + event.detail.text;
-      });
+    this.completion = this.renderRoot.querySelector<CoveoTextCompletion>(
+      "coveo-carret-position coveo-text-completion"
+    );
+    this.completion.addEventListener("text-selected", (event: CustomEvent) => {
+      this.description.value = this.description.value + event.detail.text;
+      this.completion.hidden = true;
+      this.description.focus();
+    });
+    this.description.addEventListener(
+      "input",
+      this.onDescriptionInput.bind(this)
+    );
+  }
+
+  descriptionCondition: (input: string, fieldValue: string) => boolean = (
+    input,
+    fieldValue
+  ) => {
+    const trimmed = input.trim();
+    return (
+      trimmed.length < input.length &&
+      trimmed[trimmed.length - 1] !== input[input.length - 1]
+    );
+  };
+
+  onDescriptionInput(event: InputEvent) {
+    const description = event.target as TextArea;
+    const inputBeforeCaret = description.value.substr(
+      0,
+      description.selectionEnd
+    );
+    if (this.descriptionCondition(event.data, inputBeforeCaret)) {
+      this.completion.suggestions = getCompletionSuggestions(inputBeforeCaret);
+    }
   }
 }
