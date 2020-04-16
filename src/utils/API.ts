@@ -8,25 +8,32 @@ export interface ICompletionRequest {
 }
 
 const LENGTH_NB = 5;
+const DEMO = false;
 
 export async function getCompletionSuggestions(
   data: string
 ): Promise<Array<string>> {
-  const response = await xhrWrapper({ TEXT: data, LENGTH: LENGTH_NB });
+  const response = DEMO
+    ? JSON.parse(
+        '[{"completion":"I am very glad that I did"},{"completion":"I am not an economist and I"},{"completion":"I am not sure how many I"}]'
+      )
+    : await xhrWrapper({ TEXT: data, LENGTH: LENGTH_NB });
+
   if (response) {
-    return JSON.parse(response) as Array<string>;
+    return response.map((res: ICompletion) => res.completion) as Array<string>;
   }
 }
 
-async function xhrWrapper(data: ICompletionRequest): Promise<string> {
+async function xhrWrapper(
+  data: ICompletionRequest
+): Promise<ICompletionResponse> {
   return new Promise((resolve, reject) => {
     var xhr = new XMLHttpRequest();
-    xhr.withCredentials = true;
 
     xhr.addEventListener("readystatechange", function () {
       if (this.readyState === 4) {
         if (this.status >= 200 && this.status < 300) {
-          resolve(this.responseText);
+          resolve(JSON.parse(this.responseText));
         } else {
           reject(this.responseText);
         }
