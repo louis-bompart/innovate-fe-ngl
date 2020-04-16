@@ -9,12 +9,20 @@ import { getCaretCoordinates } from "../../utils/caretPosition";
 export interface ICaretSlottable extends LitElement {
   isOpened: boolean;
 }
+
+// TODO: support native textarea.
+export interface ITextAreaSlottable extends TextArea {}
 /**
  * Use the customElement decorator to define your class as
  * a custom element. Registers <my-element> as an HTML tag.
  */
 @customElement("coveo-carret-position")
 export class CoveoCarretPosition extends LitElement {
+  private get textArea(): ITextAreaSlottable {
+    return this.renderRoot
+      .querySelector<HTMLSlotElement>("#form")
+      .assignedElements()[0] as ITextAreaSlottable;
+  }
   private get carret(): HTMLElement {
     return this.renderRoot
       .querySelector<HTMLSlotElement>("#carret")
@@ -63,16 +71,9 @@ export class CoveoCarretPosition extends LitElement {
   }
 
   updated() {
-    // Get the MWC-TextArea from the slot.
-    // TODO: support native textarea.
-    const mwcTextArea: TextArea = this.renderRoot
-      .querySelector<HTMLSlotElement>("#form")
-      .assignedElements()[0] as TextArea;
-
     // Listen to input changes.
-    mwcTextArea.addEventListener("input", (e: Event) => {
-      const target = e.target;
-      this.updateCarretPosition(target);
+    this.textArea.addEventListener("input", (e: Event) => {
+      this.updateCarretPosition();
     });
 
     this.textAreaScrollObserver = new MutationObserver(
@@ -80,7 +81,7 @@ export class CoveoCarretPosition extends LitElement {
         for (const mutation of mutationList) {
           if (mutation.type === "attributes") {
             if (mutation.attributeName === "scrollTop") {
-              this.updateCarretPosition(mwcTextArea);
+              this.updateCarretPosition();
             }
           }
         }
@@ -91,14 +92,13 @@ export class CoveoCarretPosition extends LitElement {
       (mutationList, observer) => {
         for (const mutation of mutationList) {
           if (mutation.type === "childList") {
-            const textarea = this.getNodeContainingArea(
+            const textarea = this.getNodeContainingTextArea(
               Array.from(mutation.addedNodes).find((node) => {
                 if (node instanceof Element) {
-                  return Boolean(this.getNodeContainingArea(node));
+                  return Boolean(this.getNodeContainingTextArea(node));
                 }
               }) as Element
             );
-            requestAnimationFrame;
             if (textarea) {
               let scrollTimeout: number;
               textarea.addEventListener("scroll", (event) => {
@@ -106,7 +106,7 @@ export class CoveoCarretPosition extends LitElement {
                   window.cancelAnimationFrame(scrollTimeout);
                 }
                 scrollTimeout = window.requestAnimationFrame(
-                  this.updateCarretPosition.bind(this, mwcTextArea)
+                  this.updateCarretPosition.bind(this)
                 );
               });
               observer.disconnect();
@@ -115,43 +115,45 @@ export class CoveoCarretPosition extends LitElement {
         }
       }
     );
-    this.textAreaDomLoadObserver.observe(mwcTextArea.renderRoot, {
+
+    this.textAreaDomLoadObserver.observe(this.textArea.renderRoot, {
       childList: true,
       subtree: true,
     });
   }
 
-  private getNodeContainingArea(node: Element): Element {
+  private getNodeContainingTextArea(node: Element | LitElement): Element {
     if (node instanceof HTMLTextAreaElement) {
       return node;
     }
-    return node.querySelector("textarea");
+    return (node instanceof LitElement ? node.renderRoot : node).querySelector(
+      "textarea"
+    ) as Element;
   }
 
-  private updateCarretPosition(target: EventTarget) {
-    if (target instanceof TextArea) {
-      const positions = getCaretCoordinates(
-        target.renderRoot.querySelector("textarea"),
-        target.selectionEnd,
-        this.renderRoot,
-        { debug: false }
-      );
+  public updateCarretPosition() {
+    const nativeTextArea = this.getNodeContainingTextArea(
+      this.textArea
+    ) as HTMLTextAreaElement;
+    const positions = getCaretCoordinates(
+      nativeTextArea,
+      nativeTextArea.selectionEnd,
+      this.renderRoot
+    );
 
-      const targetRects = target.getBoundingClientRect();
-      if (
-        positions.top > targetRects.bottom ||
-        positions.top < targetRects.top ||
-        positions.left < targetRects.left ||
-        positions.left > targetRects.right
-      ) {
-        this.carret.hidden = true;
-        return;
-      }
-      this.carret.hidden = false;
-      //TODO: Remove and add as option.
-      this.carret.style.top =
-        positions.top + positions.lineHeight * 0.85 + "px";
-      this.carret.style.left = positions.left + "px";
+    const targetRects = this.textArea.getBoundingClientRect();
+    if (
+      positions.top > targetRects.bottom ||
+      positions.top < targetRects.top ||
+      positions.left < targetRects.left ||
+      positions.left > targetRects.right
+    ) {
+      this.carret.hidden = true;
+      return;
     }
+    this.carret.hidden = false;
+    //TODO: Remove and add as option.
+    this.carret.style.top = positions.top + positions.lineHeight * 0.85 + "px";
+    this.carret.style.left = positions.left + "px";
   }
 }
