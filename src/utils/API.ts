@@ -40,7 +40,8 @@ async function xhrWrapper(
       }
     });
 
-    xhr.open("GET", "http://localhost:8081/complete");
+    xhr.open("POST", "http://localhost:8081/complete");
+    xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(JSON.stringify(data));
   });
 }
