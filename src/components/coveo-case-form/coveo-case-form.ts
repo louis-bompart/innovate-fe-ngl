@@ -92,13 +92,15 @@ export class CoveoCaseForm extends LitElement {
           valueBeforeCaret.length,
           "forward"
         );
+        this.description.blur();
+        this.description.focus();
       });
     });
     this.description.addEventListener(
       "input",
       this.onDescriptionInput.bind(this)
     );
-    this.description.addEventListener("keyup", (event: KeyboardEvent) => {
+    this.description.addEventListener("keyup", async (event: KeyboardEvent) => {
       switch (event.key) {
         case "Up":
         case "Down":
@@ -109,12 +111,12 @@ export class CoveoCaseForm extends LitElement {
         case "ArrowLeft":
         case "ArrowRight":
           this.carretPosition.updateCarretPosition();
-          this.onDescriptionInput(event);
+          await this.onDescriptionInput(event);
           break;
         case " ":
           if (event.ctrlKey) {
             this.carretPosition.updateCarretPosition();
-            this.onDescriptionInput(event);
+            await this.onDescriptionInput(event);
             this.completion.hidden = false;
           }
           break;
