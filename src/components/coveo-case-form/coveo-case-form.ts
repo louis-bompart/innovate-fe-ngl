@@ -91,14 +91,16 @@ export class CoveoCaseForm extends LitElement {
     );
   };
 
-  onDescriptionInput(event: InputEvent) {
+  async onDescriptionInput(event: InputEvent) {
     const description = event.target as TextArea;
     const inputBeforeCaret = description.value.substr(
       0,
       description.selectionEnd
     );
     if (this.descriptionCondition(event.data, inputBeforeCaret)) {
-      this.completion.suggestions = getCompletionSuggestions(inputBeforeCaret);
+      this.completion.suggestions = await getCompletionSuggestions(
+        inputBeforeCaret
+      );
     }
   }
 }
